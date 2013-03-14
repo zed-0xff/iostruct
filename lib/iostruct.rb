@@ -3,9 +3,9 @@ module IOStruct
     size = fmt.scan(/([a-z])(\d*)/i).map do |f,len|
       [len.to_i, 1].max *
         case f
-        when /[aAC]/ then 1
+        when /[AC]/i then 1
         when 'v' then 2
-        when 'V','l' then 4
+        when 'V','l','L' then 4
         when 'Q' then 8
         else raise "unknown fmt #{f.inspect}"
         end
