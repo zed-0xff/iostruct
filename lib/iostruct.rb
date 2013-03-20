@@ -48,5 +48,21 @@ module IOStruct
     def empty?
       to_a.all?{ |t| t == 0 || t.nil? || t.to_s.tr("\x00","").empty? }
     end
+
+    # allow initializing individual struct members by name, like:
+    #   PEdump::IMAGE_SECTION_HEADER.new(
+    #     :VirtualSize    => 0x100,
+    #     :VirtualAddress => 0x100000
+    #   )
+    def initialize *args
+      if args.size == 1 && args.first.is_a?(Hash)
+        super()
+        args.first.each do |k,v|
+          send "#{k}=", v
+        end
+      else
+        super
+      end
+    end
   end # InstanceMethods
 end # IOStruct
