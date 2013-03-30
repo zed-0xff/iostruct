@@ -3,7 +3,7 @@ module IOStruct
     size = fmt.scan(/([a-z])(\d*)/i).map do |f,len|
       [len.to_i, 1].max *
         case f
-        when /[AC]/i then 1
+        when /[AaCcx]/ then 1
         when 'v' then 2
         when 'V','l','L' then 4
         when 'Q' then 8
