@@ -49,6 +49,6 @@ describe IOStruct do
   end
 
   it "throws exception on unknown format" do
-    expect { IOStruct.new('K', :x) }.to raise_error('Unknown fmt "K"')
+    expect { IOStruct.new('K', :x) }.to raise_error('Unknown field type "K"')
   end
 end
