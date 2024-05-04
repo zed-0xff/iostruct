@@ -3,54 +3,82 @@
 module IOStruct
 
   # https://apidock.com/ruby/String/unpack
-  FIELD_SIZES = {
-    'C' => 1,      # Integer | 8-bit unsigned (unsigned char)
-    'S' => 2,      # Integer | 16-bit unsigned, native endian (uint16_t)
-    'L' => 4,      # Integer | 32-bit unsigned, native endian (uint32_t)
-    'Q' => 8,      # Integer | 64-bit unsigned, native endian (uint64_t)
-    'c' => 1,      # Integer | 8-bit signed (signed char)
-    's' => 2,      # Integer | 16-bit signed, native endian (int16_t)
-    'l' => 4,      # Integer | 32-bit signed, native endian (int32_t)
-    'q' => 8,      # Integer | 64-bit signed, native endian (int64_t)
+  FMTSPEC = {
+    'C' => [1, Integer ], # 8-bit unsigned (unsigned char)
+    'S' => [2, Integer ], # 16-bit unsigned, native endian (uint16_t)
+    'L' => [4, Integer ], # 32-bit unsigned, native endian (uint32_t)
+    'Q' => [8, Integer ], # 64-bit unsigned, native endian (uint64_t)
+    'c' => [1, Integer ], # 8-bit signed (signed char)
+    's' => [2, Integer ], # 16-bit signed, native endian (int16_t)
+    'l' => [4, Integer ], # 32-bit signed, native endian (int32_t)
+    'q' => [8, Integer ], # 64-bit signed, native endian (int64_t)
 
-    'n' => 2,      # Integer | 16-bit unsigned, network (big-endian) byte order
-    'N' => 4,      # Integer | 32-bit unsigned, network (big-endian) byte order
-    'v' => 2,      # Integer | 16-bit unsigned, VAX (little-endian) byte order
-    'V' => 4,      # Integer | 32-bit unsigned, VAX (little-endian) byte order
+    'n' => [2, Integer ], # 16-bit unsigned, network (big-endian) byte order
+    'N' => [4, Integer ], # 32-bit unsigned, network (big-endian) byte order
+    'v' => [2, Integer ], # 16-bit unsigned, VAX (little-endian) byte order
+    'V' => [4, Integer ], # 32-bit unsigned, VAX (little-endian) byte order
 
-    'A' => 1,      # String  | arbitrary binary string (remove trailing nulls and ASCII spaces)
-    'a' => 1,      # String  | arbitrary binary string
+    'A' => [1, String  ], # arbitrary binary string (remove trailing nulls and ASCII spaces)
+    'a' => [1, String  ], # arbitrary binary string
 
-    'D' => 8,      # Float   | double-precision, native format
-    'd' => 8,
-    'F' => 4,      # Float   | single-precision, native format
-    'f' => 4,
-    'E' => 8,      # Float   | double-precision, little-endian byte order
-    'e' => 4,      # Float   | single-precision, little-endian byte order
-    'G' => 8,      # Float   | double-precision, network (big-endian) byte order
-    'g' => 4,      # Float   | single-precision, network (big-endian) byte order
+    'D' => [8, Float   ], # double-precision, native format
+    'd' => [8, Float   ],
+    'F' => [4, Float   ], # single-precision, native format
+    'f' => [4, Float   ],
+    'E' => [8, Float   ], # double-precision, little-endian byte order
+    'e' => [4, Float   ], # single-precision, little-endian byte order
+    'G' => [8, Float   ], # double-precision, network (big-endian) byte order
+    'g' => [4, Float   ], # single-precision, network (big-endian) byte order
 
-    'x' => 1,      # ---     | skip forward one byte
+    'x' => [1, nil     ], # skip forward one byte
   }.freeze
 
-  def self.new fmt, *args
-    size = fmt.scan(/([a-z])(\d*)/i).map do |f,len|
-      if (field_size = FIELD_SIZES[f])
-        [len.to_i, 1].max * field_size
-      else
-        raise "Unknown fmt #{f.inspect}"
-      end
-    end.inject(&:+)
+  FieldInfo = Struct.new :type, :size, :offset
 
-    Struct.new( *args ).tap do |x|
+  def self.new fmt, *names, inspect: :hex
+    fields, size = parse_format(fmt, names)
+    names  = auto_names(fields, size) if names.empty?
+
+    Struct.new( *names ).tap do |x|
+      x.const_set 'FIELDS', names.zip(fields).to_h
       x.const_set 'FORMAT', fmt
       x.const_set 'SIZE',  size
-      x.class_eval do
-        include InstanceMethods
-      end
       x.extend ClassMethods
+      x.include InstanceMethods
+      x.include HexInspect if inspect == :hex
     end
   end # self.new
+
+  def self.parse_format(fmt, names)
+    offset = 0
+    fields = []
+    fmt.scan(/([a-z])(\d*)/i).map do |type,len|
+      size, klass = FMTSPEC[type] || raise("Unknown field type #{type.inspect}")
+      len = [len.to_i, 1].max
+      case type
+      when 'A', 'a', 'x'
+        fields << FieldInfo.new(klass, size*len, offset) if klass
+        offset += len
+      else
+        len.times do |i|
+          fields << FieldInfo.new(klass, size, offset)
+          offset += size
+        end
+      end
+    end
+    [fields, offset]
+  end
+
+  def self.auto_names fields, size
+    names = []
+    offset = 0
+    fields.each do |f|
+      names << sprintf("f%x", offset).to_sym
+      offset += f.size
+    end
+    #raise "size mismatch: #{size} != #{offset}" if size != offset
+    names
+  end
 
   module ClassMethods
     # src can be IO or String, or anything that responds to :read or :unpack
@@ -96,4 +124,22 @@ module IOStruct
       end
     end
   end # InstanceMethods
+
+  module HexInspect
+    def inspect
+      @fmtstr ||= "<#{self.class.to_s} " + self.class.const_get('FIELDS').map do |name, f|
+        fmt =
+          case 
+          when f.type == Integer
+            "%#{f.size*2}x"
+          when f.type == Float
+            "%8.3f"
+          else
+            "%s"
+          end
+        "#{name}=#{fmt}"
+      end.join(' ') + ">"
+      sprintf @fmtstr, *to_a.map{ |v| v.is_a?(String) ? v.inspect : v }
+    end
+  end
 end # IOStruct
