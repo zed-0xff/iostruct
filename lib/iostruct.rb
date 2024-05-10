@@ -6,10 +6,13 @@ module IOStruct
   FMTSPEC = {
     'C' => [1, Integer ], # 8-bit unsigned (unsigned char)
     'S' => [2, Integer ], # 16-bit unsigned, native endian (uint16_t)
+    'I' => [4, Integer ], # 32-bit unsigned, native endian (uint32_t)
     'L' => [4, Integer ], # 32-bit unsigned, native endian (uint32_t)
     'Q' => [8, Integer ], # 64-bit unsigned, native endian (uint64_t)
+
     'c' => [1, Integer ], # 8-bit signed (signed char)
     's' => [2, Integer ], # 16-bit signed, native endian (int16_t)
+    'i' => [4, Integer ], # 32-bit signed, native endian (int32_t)
     'l' => [4, Integer ], # 32-bit signed, native endian (int32_t)
     'q' => [8, Integer ], # 64-bit signed, native endian (int64_t)
 

@@ -32,20 +32,24 @@ describe IOStruct do
     expect(x.y).to eq a[1]
   end
 
-  it "unpacks big-endian" do
-    a = [12345, 56789]
-    data = a.pack('nN')
-    x = IOStruct.new('nN', :x, :y).read(data)
-    expect(x.x).to eq a[0]
-    expect(x.y).to eq a[1]
+  ['n', 'N', 'S>', 'L>', 'I>'].each do |fmt|
+    it "unpacks unsigned big-endian '#{fmt}'" do
+      a = [12345]
+      data = a.pack(fmt)
+      x = IOStruct.new(fmt, :x).read(data)
+      expect(x.x).to eq a[0]
+      expect(x.pack).to eq data
+    end
   end
 
-  it "unpacks little-endian" do
-    a = [12345, 56789]
-    data = a.pack('vV')
-    x = IOStruct.new('vV', :x, :y).read(data)
-    expect(x.x).to eq a[0]
-    expect(x.y).to eq a[1]
+  ['v', 'V', 'S<', 'L<', 'I<'].each do |fmt|
+    it "unpacks unsigned little-endian '#{fmt}'" do
+      a = [12345]
+      data = a.pack(fmt)
+      x = IOStruct.new(fmt, :x).read(data)
+      expect(x.x).to eq a[0]
+      expect(x.pack).to eq data
+    end
   end
 
   it "throws exception on unknown format" do
