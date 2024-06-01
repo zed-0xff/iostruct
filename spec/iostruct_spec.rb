@@ -25,6 +25,33 @@ describe IOStruct do
     end
   end
 
+  context "zero-length strings" do
+    let(:data) { [1, 2].pack('CC') }
+    let(:struct) { IOStruct.new('C a0 C', :a, :b, :c) }
+
+    it "deserializes" do
+      x = struct.read(data)
+      expect(x.a).to eq 1
+      expect(x.b).to eq ""
+      expect(x.c).to eq 2
+    end
+
+    it "has correct size" do
+      expect(struct::SIZE).to eq 2
+    end
+
+    it "reads correct number of bytes from IO" do
+      io = StringIO.new(data*2)
+      x = struct.read(io)
+      expect(io.pos).to eq 2
+    end
+
+    it "serializes" do
+      x = struct.read(data)
+      expect(x.pack).to eq data
+    end
+  end
+
   it "skips on 'x'" do
     a = [12345, 56789]
     data = a.pack('L2')

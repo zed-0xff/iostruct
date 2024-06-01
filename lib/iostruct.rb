@@ -57,7 +57,7 @@ module IOStruct
     fields = []
     fmt.scan(/([a-z])(\d*)/i).map do |type,len|
       size, klass = FMTSPEC[type] || raise("Unknown field type #{type.inspect}")
-      len = [len.to_i, 1].max
+      len = len.empty? ? 1 : len.to_i
       case type
       when 'A', 'a', 'x'
         fields << FieldInfo.new(klass, size*len, offset) if klass
