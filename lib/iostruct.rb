@@ -129,8 +129,18 @@ module IOStruct
   end # InstanceMethods
 
   module HexInspect
-    def inspect
-      @fmtstr ||= "<#{self.class.to_s} " + self.class.const_get('FIELDS').map do |name, f|
+    def to_s
+      s = "<#{self.class.to_s} " + to_h.map do |k, v|
+        if v.is_a?(Integer) && v > 9
+          "#{k}=0x%x" % v
+        else
+          "#{k}=#{v.inspect}"
+        end
+      end.join(' ') + ">"
+    end
+
+    def to_table
+      @fmtstr_tbl = "<#{self.class.to_s} " + self.class.const_get('FIELDS').map do |name, f|
         fmt =
           case 
           when f.type == Integer
@@ -142,7 +152,11 @@ module IOStruct
           end
         "#{name}=#{fmt}"
       end.join(' ') + ">"
-      sprintf @fmtstr, *to_a.map{ |v| v.is_a?(String) ? v.inspect : v }
+      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : v }
+    end
+
+    def inspect
+      to_s
     end
   end
 end # IOStruct
