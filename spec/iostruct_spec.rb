@@ -59,6 +59,20 @@ describe IOStruct do
     expect(x.y).to eq a[1]
   end
 
+  it "unpacks hex-string (H)" do
+    data = "1234"
+    struct = IOStruct.new('H8', :x).read(data)
+    expect(struct.x).to eq "31323334"
+    expect(struct.pack).to eq data
+  end
+
+  it "unpacks reverse-nibbled hex-string (h)" do
+    data = "1234"
+    struct = IOStruct.new('h8', :x).read(data)
+    expect(struct.x).to eq "13233343"
+    expect(struct.pack).to eq data
+  end
+
   ['n', 'N', 'S>', 'L>', 'I>'].each do |fmt|
     it "unpacks unsigned big-endian '#{fmt}'" do
       a = [12345]

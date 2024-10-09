@@ -23,6 +23,9 @@ module IOStruct
 
     'A' => [1, String  ], # arbitrary binary string (remove trailing nulls and ASCII spaces)
     'a' => [1, String  ], # arbitrary binary string
+    'Z' => [1, String  ], # arbitrary binary string (remove trailing nulls)
+    'H' => [1, String  ], # hex string (high nibble first)
+    'h' => [1, String  ], # hex string (low nibble first)
 
     'D' => [8, Float   ], # double-precision, native format
     'd' => [8, Float   ],
@@ -38,9 +41,10 @@ module IOStruct
 
   FieldInfo = Struct.new :type, :size, :offset
 
-  def self.new fmt, *names, inspect: :hex
+  def self.new fmt, *names, inspect: :hex, **renames
     fields, size = parse_format(fmt, names)
-    names  = auto_names(fields, size) if names.empty?
+    names = auto_names(fields, size) if names.empty?
+    names.map!{ |n| renames[n] || n } if renames.any?
 
     Struct.new( *names ).tap do |x|
       x.const_set 'FIELDS', names.zip(fields).to_h
@@ -59,9 +63,13 @@ module IOStruct
       size, klass = FMTSPEC[type] || raise("Unknown field type #{type.inspect}")
       len = len.empty? ? 1 : len.to_i
       case type
-      when 'A', 'a', 'x'
+      when 'A', 'a', 'x', 'Z'
         fields << FieldInfo.new(klass, size*len, offset) if klass
         offset += len
+      when 'H', 'h'
+        # XXX ruby's String#unpack length for hex strings is in characters, not bytes, i.e. "x".unpack("H2") => ["78"]
+        fields << FieldInfo.new(klass, size*len/2, offset) if klass
+        offset += len/2
       else
         len.times do |i|
           fields << FieldInfo.new(klass, size, offset)
@@ -95,9 +103,9 @@ module IOStruct
         else
           raise "[?] don't know how to read from #{src.inspect}"
         end
-      if data.size < size
-        $stderr.puts "[!] #{self.to_s} want #{size} bytes, got #{data.size}"
-      end
+#      if data.size < size
+#        $stderr.puts "[!] #{self.to_s} want #{size} bytes, got #{data.size}"
+#      end
       new(*data.unpack(const_get('FORMAT')))
     end
   end # ClassMethods
@@ -130,7 +138,7 @@ module IOStruct
 
   module HexInspect
     def to_s
-      s = "<#{self.class.to_s} " + to_h.map do |k, v|
+      "<#{self.class.to_s} " + to_h.map do |k, v|
         if v.is_a?(Integer) && v > 9
           "#{k}=0x%x" % v
         else
@@ -152,7 +160,7 @@ module IOStruct
           end
         "#{name}=#{fmt}"
       end.join(' ') + ">"
-      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : v }
+      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
     end
 
     def inspect
