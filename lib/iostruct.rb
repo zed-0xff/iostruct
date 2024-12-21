@@ -94,9 +94,11 @@ module IOStruct
   module ClassMethods
     # src can be IO or String, or anything that responds to :read or :unpack
     def read src, size = nil
+      pos = nil
       size ||= const_get 'SIZE'
       data =
         if src.respond_to?(:read)
+          pos = src.tell
           src.read(size).to_s
         elsif src.respond_to?(:unpack)
           src
@@ -106,11 +108,13 @@ module IOStruct
 #      if data.size < size
 #        $stderr.puts "[!] #{self.to_s} want #{size} bytes, got #{data.size}"
 #      end
-      new(*data.unpack(const_get('FORMAT')))
+      new(*data.unpack(const_get('FORMAT'))).tap{ |x| x.__offset = pos }
     end
   end # ClassMethods
 
   module InstanceMethods
+    attr_accessor :__offset
+
     def pack
       to_a.pack self.class.const_get('FORMAT')
     end

@@ -96,4 +96,27 @@ describe IOStruct do
   it "throws exception on unknown format" do
     expect { IOStruct.new('K', :x) }.to raise_error('Unknown field type "K"')
   end
+
+  context '__offset field' do
+    let(:data) { 0x100.times.to_a.pack('L*') }
+    let(:io) { StringIO.new(data) }
+    let(:struct) { IOStruct.new('LLLL', :a, :b, :c, :d) }
+
+    context 'when src is an IO' do
+      it 'is set to the current IO position' do
+        a = []
+        while !io.eof?
+          a << struct.read(io)
+        end
+        expect(a.map(&:__offset)).to eq (0...0x400).step(0x10).to_a
+      end
+    end
+
+    context 'when src is a string' do
+      it 'is nil' do
+        x = struct.read(data)
+        expect(x.__offset).to be_nil
+      end
+    end
+  end
 end
