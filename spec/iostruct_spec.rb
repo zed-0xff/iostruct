@@ -36,8 +36,12 @@ describe IOStruct do
       expect(x.c).to eq 2
     end
 
-    it "has correct size" do
+    it "has correct SIZE" do
       expect(struct::SIZE).to eq 2
+    end
+
+    it "has correct size" do
+      expect(struct.size).to eq 2
     end
 
     it "reads correct number of bytes from IO" do

@@ -1,3 +1,13 @@
+# 0.4.0
+
+ - added `size` class method that returns SIZE constant
+    
+    ```ruby
+    X = IOStruct.new('LL')
+    X::SIZE # 8
+    X.size  # 8
+    ```
+
 # 0.3.0
 
  - added `__offset` field:

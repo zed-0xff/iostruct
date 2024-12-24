@@ -110,6 +110,10 @@ module IOStruct
 #      end
       new(*data.unpack(const_get('FORMAT'))).tap{ |x| x.__offset = pos }
     end
+
+    def size
+      self::SIZE
+    end
   end # ClassMethods
 
   module InstanceMethods
