@@ -2,6 +2,22 @@ require 'spec_helper'
 require 'stringio'
 
 describe IOStruct do
+  describe ":inspect_name_override" do
+    context "when set" do
+      it "uses the custom name" do
+        x = IOStruct.new('LL', :x, :y, inspect_name_override: 'Point')
+        expect(x.new.inspect).to match /<Point x=nil y=nil>/
+      end
+    end
+
+    context "when not set" do
+      it "has default name" do
+        x = IOStruct.new('LL', :x, :y)
+        expect(x.new.inspect).to match /<#<Class:0x\h+> x=nil y=nil>/
+      end
+    end
+  end
+
   describe "#read" do
     let(:a) { [12345, 56789] }
     let(:data) { a.pack('L2') }

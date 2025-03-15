@@ -41,7 +41,7 @@ module IOStruct
 
   FieldInfo = Struct.new :type, :size, :offset
 
-  def self.new fmt, *names, inspect: :hex, **renames
+  def self.new fmt, *names, inspect: :hex, inspect_name_override: nil, **renames
     fields, size = parse_format(fmt, names)
     names = auto_names(fields, size) if names.empty?
     names.map!{ |n| renames[n] || n } if renames.any?
@@ -53,6 +53,7 @@ module IOStruct
       x.extend ClassMethods
       x.include InstanceMethods
       x.include HexInspect if inspect == :hex
+      x.define_singleton_method(:name) { inspect_name_override } if inspect_name_override
     end
   end # self.new
 
@@ -114,6 +115,10 @@ module IOStruct
     def size
       self::SIZE
     end
+
+    def name
+      self.to_s
+    end
   end # ClassMethods
 
   module InstanceMethods
@@ -146,7 +151,7 @@ module IOStruct
 
   module HexInspect
     def to_s
-      "<#{self.class.to_s} " + to_h.map do |k, v|
+      "<#{self.class.name} " + to_h.map do |k, v|
         if v.is_a?(Integer) && v > 9
           "#{k}=0x%x" % v
         else
@@ -156,7 +161,7 @@ module IOStruct
     end
 
     def to_table
-      @fmtstr_tbl = "<#{self.class.to_s} " + self.class.const_get('FIELDS').map do |name, f|
+      @fmtstr_tbl = "<#{self.class.name} " + self.class.const_get('FIELDS').map do |name, f|
         fmt =
           case 
           when f.type == Integer
