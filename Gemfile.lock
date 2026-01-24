@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    iostruct (0.5.0)
+    iostruct (0.6.0)
 
 GEM
   remote: https://rubygems.org/

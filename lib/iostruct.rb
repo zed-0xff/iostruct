@@ -1,85 +1,45 @@
 # frozen_string_literal: true
 
+require_relative 'iostruct/pack_fmt'
+require_relative 'iostruct/hash_fmt'
+
 module IOStruct
+  extend PackFmt
+  extend HashFmt
 
-  # https://apidock.com/ruby/String/unpack
-  FMTSPEC = {
-    'C' => [1, Integer ], # 8-bit unsigned (unsigned char)
-    'S' => [2, Integer ], # 16-bit unsigned, native endian (uint16_t)
-    'I' => [4, Integer ], # 32-bit unsigned, native endian (uint32_t)
-    'L' => [4, Integer ], # 32-bit unsigned, native endian (uint32_t)
-    'Q' => [8, Integer ], # 64-bit unsigned, native endian (uint64_t)
+  FieldInfo = Struct.new :type, :size, :offset, :count, :fmt
 
-    'c' => [1, Integer ], # 8-bit signed (signed char)
-    's' => [2, Integer ], # 16-bit signed, native endian (int16_t)
-    'i' => [4, Integer ], # 32-bit signed, native endian (int32_t)
-    'l' => [4, Integer ], # 32-bit signed, native endian (int32_t)
-    'q' => [8, Integer ], # 64-bit signed, native endian (int64_t)
+  def self.new fmt=nil, *names, inspect: :hex, inspect_name_override: nil, struct_name: nil, **kwargs
+    struct_name ||= inspect_name_override # XXX inspect_name_override is deprecated
+    if fmt
+      renames = kwargs
+      finfos, size = parse_pack_format(fmt, names)
+      names = auto_names(finfos, size) if names.empty?
+      names.map!{ |n| renames[n] || n } if renames.any?
+    elsif kwargs[:fields]
+      fmt, names, finfos, size = parse_hash_format(name: struct_name, **kwargs)
+    else
+      raise "IOStruct: no fmt and no :fields specified"
+    end
 
-    'n' => [2, Integer ], # 16-bit unsigned, network (big-endian) byte order
-    'N' => [4, Integer ], # 32-bit unsigned, network (big-endian) byte order
-    'v' => [2, Integer ], # 16-bit unsigned, VAX (little-endian) byte order
-    'V' => [4, Integer ], # 32-bit unsigned, VAX (little-endian) byte order
+    # if first argument to Struct.new() is a string - it creates a named struct in the Struct:: namespace
+    # convert all just for the case
+    names = names.map(&:to_sym)
 
-    'A' => [1, String  ], # arbitrary binary string (remove trailing nulls and ASCII spaces)
-    'a' => [1, String  ], # arbitrary binary string
-    'Z' => [1, String  ], # arbitrary binary string (remove trailing nulls)
-    'H' => [1, String  ], # hex string (high nibble first)
-    'h' => [1, String  ], # hex string (low nibble first)
-
-    'D' => [8, Float   ], # double-precision, native format
-    'd' => [8, Float   ],
-    'F' => [4, Float   ], # single-precision, native format
-    'f' => [4, Float   ],
-    'E' => [8, Float   ], # double-precision, little-endian byte order
-    'e' => [4, Float   ], # single-precision, little-endian byte order
-    'G' => [8, Float   ], # double-precision, network (big-endian) byte order
-    'g' => [4, Float   ], # single-precision, network (big-endian) byte order
-
-    'x' => [1, nil     ], # skip forward one byte
-  }.freeze
-
-  FieldInfo = Struct.new :type, :size, :offset
-
-  def self.new fmt, *names, inspect: :hex, inspect_name_override: nil, **renames
-    fields, size = parse_format(fmt, names)
-    names = auto_names(fields, size) if names.empty?
-    names.map!{ |n| renames[n] || n } if renames.any?
-
-    Struct.new( *names ).tap do |x|
-      x.const_set 'FIELDS', names.zip(fields).to_h
-      x.const_set 'FORMAT', fmt
-      x.const_set 'SIZE',  size
-      x.extend ClassMethods
-      x.include InstanceMethods
-      x.include HexInspect if inspect == :hex
-      x.define_singleton_method(:name) { inspect_name_override } if inspect_name_override
+    Struct.new( *names ) do
+      const_set 'FIELDS', names.zip(finfos).to_h
+      const_set 'FORMAT', fmt
+      const_set 'SIZE', size
+      extend ClassMethods
+      include InstanceMethods
+      include NestedInstanceMethods if finfos.any?(&:fmt)
+      include HexInspect if inspect == :hex
+      define_singleton_method(:to_s) { struct_name } if struct_name
+      define_singleton_method(:name) { struct_name } if struct_name
     end
   end # self.new
 
-  def self.parse_format(fmt, names)
-    offset = 0
-    fields = []
-    fmt.scan(/([a-z])(\d*)/i).map do |type,len|
-      size, klass = FMTSPEC[type] || raise("Unknown field type #{type.inspect}")
-      len = len.empty? ? 1 : len.to_i
-      case type
-      when 'A', 'a', 'x', 'Z'
-        fields << FieldInfo.new(klass, size*len, offset) if klass
-        offset += len
-      when 'H', 'h'
-        # XXX ruby's String#unpack length for hex strings is in characters, not bytes, i.e. "x".unpack("H2") => ["78"]
-        fields << FieldInfo.new(klass, size*len/2, offset) if klass
-        offset += len/2
-      else
-        len.times do |i|
-          fields << FieldInfo.new(klass, size, offset)
-          offset += size
-        end
-      end
-    end
-    [fields, offset]
-  end
+  private
 
   def self.auto_names fields, size
     names = []
@@ -112,12 +72,12 @@ module IOStruct
       new(*data.unpack(const_get('FORMAT'))).tap{ |x| x.__offset = pos }
     end
 
-    def size
-      self::SIZE
+    def name
+      'struct'
     end
 
-    def name
-      self.to_s
+    def size
+      self::SIZE
     end
   end # ClassMethods
 
@@ -146,8 +106,28 @@ module IOStruct
       else
         super
       end
+    rescue ArgumentError => e
+      if e.message == "struct size differs"
+        raise ArgumentError.new("struct size differs: class=#{self.class.name} format=#{self.class::FORMAT.inspect} fields_count=#{self.class::FIELDS.size} args=#{args.inspect}")
+      else
+        raise
+      end
     end
   end # InstanceMethods
+
+  # initialize nested structures / arrays
+  module NestedInstanceMethods
+    def initialize *args
+      super
+      self.class::FIELDS.each do |k, v|
+        next unless v.fmt
+
+        if value = self[k]
+          self[k] = v.fmt.is_a?(String) ? value.unpack(v.fmt) : v.fmt.read(value)
+        end
+      end
+    end
+  end
 
   module HexInspect
     def to_s
@@ -161,7 +141,7 @@ module IOStruct
     end
 
     def to_table
-      @fmtstr_tbl = "<#{self.class.name} " + self.class.const_get('FIELDS').map do |name, f|
+      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map do |name, f|
         fmt =
           case 
           when f.type == Integer

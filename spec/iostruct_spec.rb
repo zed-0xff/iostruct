@@ -2,10 +2,10 @@ require 'spec_helper'
 require 'stringio'
 
 describe IOStruct do
-  describe ":inspect_name_override" do
+  describe ":name" do
     context "when set" do
       it "uses the custom name" do
-        x = IOStruct.new('LL', :x, :y, inspect_name_override: 'Point')
+        x = IOStruct.new('LL', :x, :y, struct_name: 'Point')
         expect(x.new.inspect).to match /<Point x=nil y=nil>/
       end
     end
@@ -13,7 +13,7 @@ describe IOStruct do
     context "when not set" do
       it "has default name" do
         x = IOStruct.new('LL', :x, :y)
-        expect(x.new.inspect).to match /<#<Class:0x\h+> x=nil y=nil>/
+        expect(x.new.inspect).to match /<struct x=nil y=nil>/
       end
     end
   end
