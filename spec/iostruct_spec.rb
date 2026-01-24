@@ -161,6 +161,18 @@ describe IOStruct do
           "<struct f0=ff f1=ffff f3=ffffffff f7=ffffffffffffffff>"
         )
       end
+
+      it "works with unknown types" do
+        struct = IOStruct.new('C', :a, :name, inspect: :hex)
+        s = struct.new
+        expect(s.to_table).to eq(
+          "<struct a= 0 name=nil>"
+        )
+        s.name = "test"
+        expect(s.to_table).to eq(
+          '<struct a= 0 name="test">'
+        )
+      end
     end
 
     context "when inspect is not :hex" do
@@ -184,6 +196,18 @@ describe IOStruct do
         )
         expect(unsigned_struct.read("\xff"*16).to_table).to eq(
           "<struct f0= 255 f1= 65535 f3= 4294967295 f7=18446744073709551615>"
+        )
+      end
+
+      it "works with unknown types" do
+        struct = IOStruct.new('C', :a, :name, inspect: :dec)
+        s = struct.new
+        expect(s.to_table).to eq(
+          "<struct a=   0 name=nil>"
+        )
+        s.name = "test"
+        expect(s.to_table).to eq(
+          '<struct a=   0 name="test">'
         )
       end
     end

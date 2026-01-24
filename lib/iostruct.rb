@@ -135,26 +135,33 @@ module IOStruct
 
   module DecInspect
     def to_table
-      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map do |name, f|
-        fmt =
+      values = self.to_a
+      "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
+        v = values[idx]
+        fname, f = el
+
+        "#{fname}=" +
           case 
+          when f.nil? # unknown field type
+            v.inspect
           when f.type == Integer
+            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Integer" error
+            # display as unsigned, because signed %x looks ugly: "..f" for -1
             case f.size
-            when 1 then "%4d"
-            when 2 then "%6d"
-            when 4 then "%11d"
-            when 8 then "%20d"
+            when 1 then "%4d" % v
+            when 2 then "%6d" % v
+            when 4 then "%11d" % v
+            when 8 then "%20d" % v
             else
-              raise "Unsupported Integer size #{f.size} for field #{name}"
+              raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
+            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f"
           else
-            "%s"
+            v.inspect
           end
-        "#{name}=#{fmt}"
       end.join(' ') + ">"
-      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
     end
   end
 
@@ -171,36 +178,32 @@ module IOStruct
 
     def to_table
       values = self.to_a
-      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
-        name, f = el
-        fmt =
+      "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
+        v = values[idx]
+        fname, f = el
+
+        "#{fname}=" +
           case 
+          when f.nil? # unknown field type
+            v.inspect
           when f.type == Integer
+            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Integer" error
             # display as unsigned, because signed %x looks ugly: "..f" for -1
             case f.size
-            when 1
-              values[idx] &= 0xff
-              "%2x"
-            when 2
-              values[idx] &= 0xffff
-              "%4x"
-            when 4
-              values[idx] &= 0xffffffff
-              "%8x"
-            when 8
-              values[idx] &= 0xffffffffffffffff
-              "%16x"
+            when 1 then "%2x" % (v & 0xff)
+            when 2 then "%4x" % (v & 0xffff)
+            when 4 then "%8x" % (v & 0xffffffff)
+            when 8 then "%16x" % (v & 0xffffffffffffffff)
             else
-              raise "Unsupported Integer size #{f.size} for field #{name}"
+              raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
+            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f"
           else
-            "%s"
+            v.inspect
           end
-        "#{name}=#{fmt}"
       end.join(' ') + ">"
-      sprintf @fmtstr_tbl, *values.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
     end
 
     def inspect
