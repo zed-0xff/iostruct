@@ -139,4 +139,53 @@ describe IOStruct do
       end
     end
   end
+
+  describe "to_table" do
+    context "when inspect is :hex" do
+      it "formats signed struct as table" do
+        signed_struct = IOStruct.new('c s i q', inspect: :hex)
+        expect(signed_struct.new.to_table).to eq(
+          "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
+        )
+        expect(signed_struct.read("\xff"*16).to_table).to eq(
+          "<struct f0=ff f1=ffff f3=ffffffff f7=ffffffffffffffff>"
+        )
+      end
+
+      it "formats unsigned struct as table" do
+        unsigned_struct = IOStruct.new('C S I Q', inspect: :hex)
+        expect(unsigned_struct.new.to_table).to eq(
+          "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
+        )
+        expect(unsigned_struct.read("\xff"*16).to_table).to eq(
+          "<struct f0=ff f1=ffff f3=ffffffff f7=ffffffffffffffff>"
+        )
+      end
+    end
+
+    context "when inspect is not :hex" do
+      it "formats signed struct as table" do
+        signed_struct = IOStruct.new('c s i q', inspect: :dec)
+        expect(signed_struct.new.to_table).to eq(
+          "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
+        )
+        expect(signed_struct.read("\xff"*16).to_table).to eq(
+          "<struct f0=  -1 f1=    -1 f3=         -1 f7=                  -1>"
+        )
+        expect(signed_struct.read("\x80\x00\x80\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x80").to_table).to eq(
+          "<struct f0=-128 f1=-32768 f3=-2147483648 f7=-9223372036854775808>"
+        )
+      end
+
+      it "formats unsigned struct as table" do
+        unsigned_struct = IOStruct.new('C S I Q', inspect: :dec)
+        expect(unsigned_struct.new.to_table).to eq(
+          "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
+        )
+        expect(unsigned_struct.read("\xff"*16).to_table).to eq(
+          "<struct f0= 255 f1= 65535 f3= 4294967295 f7=18446744073709551615>"
+        )
+      end
+    end
+  end
 end

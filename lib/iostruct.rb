@@ -33,7 +33,11 @@ module IOStruct
       extend ClassMethods
       include InstanceMethods
       include NestedInstanceMethods if finfos.any?(&:fmt)
-      include HexInspect if inspect == :hex
+      if inspect == :hex
+        include HexInspect 
+      else
+        include DecInspect 
+      end
       define_singleton_method(:to_s) { struct_name } if struct_name
       define_singleton_method(:name) { struct_name } if struct_name
     end
@@ -129,6 +133,31 @@ module IOStruct
     end
   end
 
+  module DecInspect
+    def to_table
+      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map do |name, f|
+        fmt =
+          case 
+          when f.type == Integer
+            case f.size
+            when 1 then "%4d"
+            when 2 then "%6d"
+            when 4 then "%11d"
+            when 8 then "%20d"
+            else
+              raise "Unsupported Integer size #{f.size} for field #{name}"
+            end
+          when f.type == Float
+            "%8.3f"
+          else
+            "%s"
+          end
+        "#{name}=#{fmt}"
+      end.join(' ') + ">"
+      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
+    end
+  end
+
   module HexInspect
     def to_s
       "<#{self.class.name} " + to_h.map do |k, v|
@@ -141,11 +170,29 @@ module IOStruct
     end
 
     def to_table
-      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map do |name, f|
+      values = self.to_a
+      @fmtstr_tbl = "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
+        name, f = el
         fmt =
           case 
           when f.type == Integer
-            "%#{f.size*2}x"
+            # display as unsigned, because signed %x looks ugly: "..f" for -1
+            case f.size
+            when 1
+              values[idx] &= 0xff
+              "%2x"
+            when 2
+              values[idx] &= 0xffff
+              "%4x"
+            when 4
+              values[idx] &= 0xffffffff
+              "%8x"
+            when 8
+              values[idx] &= 0xffffffffffffffff
+              "%16x"
+            else
+              raise "Unsupported Integer size #{f.size} for field #{name}"
+            end
           when f.type == Float
             "%8.3f"
           else
@@ -153,7 +200,7 @@ module IOStruct
           end
         "#{name}=#{fmt}"
       end.join(' ') + ">"
-      sprintf @fmtstr_tbl, *to_a.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
+      sprintf @fmtstr_tbl, *values.map{ |v| v.is_a?(String) ? v.inspect : (v||0) } # "||0" to avoid "`sprintf': can't convert nil into Integer" error
     end
 
     def inspect
