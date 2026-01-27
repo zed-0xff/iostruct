@@ -5,14 +5,14 @@ describe IOStruct do
   describe ":name" do
     context "when set" do
       it "uses the custom name" do
-        x = IOStruct.new('LL', :x, :y, struct_name: 'Point')
+        x = described_class.new('LL', :x, :y, struct_name: 'Point')
         expect(x.new.inspect).to match /<Point x=nil y=nil>/
       end
     end
 
     context "when not set" do
       it "has default name" do
-        x = IOStruct.new('LL', :x, :y)
+        x = described_class.new('LL', :x, :y)
         expect(x.new.inspect).to match /<struct x=nil y=nil>/
       end
     end
@@ -23,19 +23,19 @@ describe IOStruct do
     let(:data) { a.pack('L2') }
 
     it "reads from IO" do
-      x = IOStruct.new('LL', :x, :y).read(StringIO.new(data))
+      x = described_class.new('LL', :x, :y).read(StringIO.new(data))
       expect(x.x).to eq a[0]
       expect(x.y).to eq a[1]
     end
 
     it "reads from String" do
-      x = IOStruct.new('LL', :x, :y).read(data)
+      x = described_class.new('LL', :x, :y).read(data)
       expect(x.x).to eq a[0]
       expect(x.y).to eq a[1]
     end
 
     it "creates a new instance of a subclass" do
-      klass = Class.new( IOStruct.new('LL', :x, :y) )
+      klass = Class.new( described_class.new('LL', :x, :y) )
       x = klass.read(data)
       expect(x).to be_a klass
     end
@@ -43,7 +43,7 @@ describe IOStruct do
 
   context "zero-length strings" do
     let(:data) { [1, 2].pack('CC') }
-    let(:struct) { IOStruct.new('C a0 C', :a, :b, :c) }
+    let(:struct) { described_class.new('C a0 C', :a, :b, :c) }
 
     it "deserializes" do
       x = struct.read(data)
@@ -75,20 +75,20 @@ describe IOStruct do
   it "skips on 'x'" do
     a = [12345, 56789]
     data = a.pack('L2')
-    x = IOStruct.new('x4L', :y).read(data)
+    x = described_class.new('x4L', :y).read(data)
     expect(x.y).to eq a[1]
   end
 
   it "unpacks hex-string (H)" do
     data = "1234"
-    struct = IOStruct.new('H8', :x).read(data)
+    struct = described_class.new('H8', :x).read(data)
     expect(struct.x).to eq "31323334"
     expect(struct.pack).to eq data
   end
 
   it "unpacks reverse-nibbled hex-string (h)" do
     data = "1234"
-    struct = IOStruct.new('h8', :x).read(data)
+    struct = described_class.new('h8', :x).read(data)
     expect(struct.x).to eq "13233343"
     expect(struct.pack).to eq data
   end
@@ -98,7 +98,7 @@ describe IOStruct do
     it "unpacks unsigned big-endian '#{fmt}'" do
       a = [12345]
       data = a.pack(fmt)
-      x = IOStruct.new(fmt, :x).read(data)
+      x = described_class.new(fmt, :x).read(data)
       expect(x.x).to eq a[0]
       expect(x.pack).to eq data
     end
@@ -108,7 +108,7 @@ describe IOStruct do
     it "unpacks unsigned little-endian '#{fmt}'" do
       a = [12345]
       data = a.pack(fmt)
-      x = IOStruct.new(fmt, :x).read(data)
+      x = described_class.new(fmt, :x).read(data)
       expect(x.x).to eq a[0]
       expect(x.pack).to eq data
     end
@@ -116,13 +116,13 @@ describe IOStruct do
   # rubocop:enable RSpec/RepeatedExample
 
   it "throws exception on unknown format" do
-    expect { IOStruct.new('K', :x) }.to raise_error('Unknown field type "K"')
+    expect { described_class.new('K', :x) }.to raise_error('Unknown field type "K"')
   end
 
   context '__offset field' do
     let(:data) { 0x100.times.to_a.pack('L*') }
     let(:io) { StringIO.new(data) }
-    let(:struct) { IOStruct.new('LLLL', :a, :b, :c, :d) }
+    let(:struct) { described_class.new('LLLL', :a, :b, :c, :d) }
 
     context 'when src is an IO' do
       it 'is set to the current IO position' do
@@ -143,7 +143,7 @@ describe IOStruct do
   describe "to_table" do
     context "when inspect is :hex" do
       it "formats signed struct as table" do
-        signed_struct = IOStruct.new('c s i q', inspect: :hex)
+        signed_struct = described_class.new('c s i q', inspect: :hex)
         expect(signed_struct.new.to_table).to eq(
           "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
         )
@@ -153,7 +153,7 @@ describe IOStruct do
       end
 
       it "formats unsigned struct as table" do
-        unsigned_struct = IOStruct.new('C S I Q', inspect: :hex)
+        unsigned_struct = described_class.new('C S I Q', inspect: :hex)
         expect(unsigned_struct.new.to_table).to eq(
           "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
         )
@@ -163,7 +163,7 @@ describe IOStruct do
       end
 
       it "works with unknown types" do
-        struct = IOStruct.new('C', :a, :name, inspect: :hex)
+        struct = described_class.new('C', :a, :name, inspect: :hex)
         s = struct.new
         expect(s.to_table).to eq(
           "<struct a= 0 name=nil>"
@@ -177,7 +177,7 @@ describe IOStruct do
 
     context "when inspect is not :hex" do
       it "formats signed struct as table" do
-        signed_struct = IOStruct.new('c s i q', inspect: :dec)
+        signed_struct = described_class.new('c s i q', inspect: :dec)
         expect(signed_struct.new.to_table).to eq(
           "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
         )
@@ -190,7 +190,7 @@ describe IOStruct do
       end
 
       it "formats unsigned struct as table" do
-        unsigned_struct = IOStruct.new('C S I Q', inspect: :dec)
+        unsigned_struct = described_class.new('C S I Q', inspect: :dec)
         expect(unsigned_struct.new.to_table).to eq(
           "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
         )
@@ -200,7 +200,7 @@ describe IOStruct do
       end
 
       it "works with unknown types" do
-        struct = IOStruct.new('C', :a, :name, inspect: :dec)
+        struct = described_class.new('C', :a, :name, inspect: :dec)
         s = struct.new
         expect(s.to_table).to eq(
           "<struct a=   0 name=nil>"

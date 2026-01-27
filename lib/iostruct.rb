@@ -15,7 +15,7 @@ module IOStruct
       renames = kwargs
       finfos, size = parse_pack_format(fmt, names)
       names = auto_names(finfos, size) if names.empty?
-      names.map!{ |n| renames[n] || n } if renames.any?
+      names.map! { |n| renames[n] || n } if renames.any?
     elsif kwargs[:fields]
       fmt, names, finfos, size = parse_hash_format(name: struct_name, **kwargs)
     else
@@ -45,7 +45,7 @@ module IOStruct
 
   private
 
-  def self.auto_names fields, size
+  def self.auto_names fields, _size
     names = []
     offset = 0
     fields.each do |f|
@@ -73,7 +73,7 @@ module IOStruct
 #      if data.size < size
 #        $stderr.puts "[!] #{self.to_s} want #{size} bytes, got #{data.size}"
 #      end
-      new(*data.unpack(const_get('FORMAT'))).tap{ |x| x.__offset = pos }
+      new(*data.unpack(const_get('FORMAT'))).tap { |x| x.__offset = pos }
     end
 
     def name
@@ -93,7 +93,7 @@ module IOStruct
     end
 
     def empty?
-      to_a.all?{ |t| t == 0 || t.nil? || t.to_s.tr("\x00","").empty? }
+      to_a.all? { |t| t == 0 || t.nil? || t.to_s.tr("\x00", "").empty? }
     end
 
     # allow initializing individual struct members by name, like:
@@ -104,7 +104,7 @@ module IOStruct
     def initialize *args
       if args.size == 1 && args.first.is_a?(Hash)
         super()
-        args.first.each do |k,v|
+        args.first.each do |k, v|
           send "#{k}=", v
         end
       else

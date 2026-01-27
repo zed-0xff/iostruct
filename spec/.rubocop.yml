@@ -1,10 +1,22 @@
 inherit_from: ../.rubocop.yml
 
+
+Layout/SpaceInsideParens:
+  Enabled: false
+
+
 Style/FrozenStringLiteralComment:
   Enabled: false
+
 
 RSpec/MultipleExpectations:
   Enabled: false
 
 RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/ExampleWording:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
   Enabled: false

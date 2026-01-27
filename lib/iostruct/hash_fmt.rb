@@ -19,16 +19,17 @@ module IOStruct
       'f' => ['float'],
     }
 
-    KNOWN_FIELD_TYPES = KNOWN_FIELD_TYPES_REVERSED.map{ |t, a| a.map{ |v| [v, t] } }.flatten.each_slice(2).to_h
+    KNOWN_FIELD_TYPES = KNOWN_FIELD_TYPES_REVERSED.map { |t, a| a.map { |v| [v, t] } }.flatten.each_slice(2).to_h
 
     # for external use
     def get_type_size(typename)
       type_code = KNOWN_FIELD_TYPES[typename.to_s]
-      f_size, _ = PackFmt::FMTSPEC[type_code]
+      f_size, = PackFmt::FMTSPEC[type_code]
       f_size
     end
 
     private
+
     def parse_hash_format(fields:, size: nil, name: nil)
       struct_name = name
       offset = 0
@@ -89,6 +90,7 @@ module IOStruct
         FieldInfo.new(klass, f_size, f_offset, f_count, f_fmt)
       end
       raise "#{struct_name}: actual struct size #{offset} is greater than forced size #{size}: #{fields.inspect}" if size && offset > size
+
       [fmt_arr.join, names, finfos, size || offset]
     end
   end

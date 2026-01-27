@@ -4,7 +4,7 @@ require 'stringio'
 describe IOStruct do
   describe "hash format ctor" do
     it "works" do
-      klass = IOStruct.new(
+      klass = described_class.new(
         fields: {
           x: "int",
           y: :int,
@@ -18,7 +18,7 @@ describe IOStruct do
     end
 
     it "respects :name" do
-      klass = IOStruct.new(
+      klass = described_class.new(
         fields: {
           x: "int",
           y: :int,
@@ -30,7 +30,7 @@ describe IOStruct do
     end
 
     it "respects :offset" do
-      klass = IOStruct.new(
+      klass = described_class.new(
         struct_name: 'Point',
         fields: {
           x: "int",
@@ -50,7 +50,7 @@ describe IOStruct do
     context 'when two fields have same offset' do
       it 'fails' do
         expect {
-          IOStruct.new(
+          described_class.new(
             struct_name: 'Point',
             fields: {
               x: { type: :int, offset: 0 },
@@ -62,7 +62,7 @@ describe IOStruct do
     end
 
     it "can override size" do
-      klass = IOStruct.new(
+      klass = described_class.new(
         fields: {
           x: "int",
           y: :int,
@@ -74,7 +74,7 @@ describe IOStruct do
     end
 
     it "supports arrays" do
-      klass = IOStruct.new(
+      klass = described_class.new(
         fields: {
           x: "int",
           a: { type: 'int', count: 3 },
@@ -83,16 +83,16 @@ describe IOStruct do
       )
       expect(klass.size).to eq(4 * 5)
 
-      v = klass.read([1,2,3,4,5,6,7].pack('i*'))
+      v = klass.read([1, 2, 3, 4, 5, 6, 7].pack('i*'))
 
       expect(v.x).to eq(1)
-      expect(v.a).to eq([2,3,4])
+      expect(v.a).to eq([2, 3, 4])
       expect(v.y).to eq(5)
     end
 
     it "supports nesting" do
-      point = IOStruct.new( fields: { x: "int", y: :int } )
-      rect = IOStruct.new(
+      point = described_class.new( fields: { x: "int", y: :int } )
+      rect = described_class.new(
         struct_name: 'Rect',
         fields: {
           topLeft: point,

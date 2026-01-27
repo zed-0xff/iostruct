@@ -40,10 +40,11 @@ module IOStruct
     }.freeze
 
     private
-    def parse_pack_format(fmt, names)
+
+    def parse_pack_format(fmt, _names)
       offset = 0
       fields = []
-      fmt.scan(/([a-z])(\d*)/i).map do |type,len|
+      fmt.scan(/([a-z])(\d*)/i).map do |type, len|
         size, klass = FMTSPEC[type] || raise("Unknown field type #{type.inspect}")
         len = len.empty? ? 1 : len.to_i
         case type
@@ -55,7 +56,7 @@ module IOStruct
           fields << FieldInfo.new(klass, size * len / 2, offset) if klass
           offset += len / 2
         else
-          len.times do |i|
+          len.times do |_i|
             fields << FieldInfo.new(klass, size, offset)
             offset += size
           end
