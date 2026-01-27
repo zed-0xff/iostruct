@@ -7,9 +7,11 @@ module IOStruct
   extend PackFmt
   extend HashFmt
 
+  # rubocop:disable Lint/StructNewOverride
   FieldInfo = Struct.new :type, :size, :offset, :count, :fmt
+  # rubocop:enable Lint/StructNewOverride
 
-  def self.new fmt=nil, *names, inspect: :hex, inspect_name_override: nil, struct_name: nil, **kwargs
+  def self.new fmt = nil, *names, inspect: :hex, inspect_name_override: nil, struct_name: nil, **kwargs
     struct_name ||= inspect_name_override # XXX inspect_name_override is deprecated
     if fmt
       renames = kwargs
@@ -43,22 +45,19 @@ module IOStruct
     end
   end # self.new
 
-  private
-
-  def self.auto_names fields, _size
+  def self.auto_names(fields, _size)
     names = []
     offset = 0
     fields.each do |f|
       names << sprintf("f%x", offset).to_sym
       offset += f.size
     end
-    #raise "size mismatch: #{size} != #{offset}" if size != offset
     names
   end
 
   module ClassMethods
     # src can be IO or String, or anything that responds to :read or :unpack
-    def read src, size = nil
+    def read(src, size = nil)
       pos = nil
       size ||= const_get 'SIZE'
       data =
@@ -70,9 +69,6 @@ module IOStruct
         else
           raise "[?] don't know how to read from #{src.inspect}"
         end
-#      if data.size < size
-#        $stderr.puts "[!] #{self.to_s} want #{size} bytes, got #{data.size}"
-#      end
       new(*data.unpack(const_get('FORMAT'))).tap { |x| x.__offset = pos }
     end
 
@@ -110,12 +106,6 @@ module IOStruct
       else
         super
       end
-    rescue ArgumentError => e
-      if e.message == "struct size differs"
-        raise ArgumentError.new("struct size differs: class=#{self.class.name} format=#{self.class::FORMAT.inspect} fields_count=#{self.class::FIELDS.size} args=#{args.inspect}")
-      else
-        raise
-      end
     end
   end # InstanceMethods
 
@@ -134,6 +124,7 @@ module IOStruct
   end
 
   module DecInspect
+    # rubocop:disable Lint/DuplicateBranch
     def to_table
       values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
@@ -163,6 +154,7 @@ module IOStruct
           end
       end.join(' ') + ">"
     end
+    # rubocop:enable Lint/DuplicateBranch
   end
 
   module HexInspect
@@ -176,6 +168,7 @@ module IOStruct
       end.join(' ') + ">"
     end
 
+    # rubocop:disable Lint/DuplicateBranch
     def to_table
       values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
@@ -205,6 +198,7 @@ module IOStruct
           end
       end.join(' ') + ">"
     end
+    # rubocop:enable Lint/DuplicateBranch
 
     def inspect
       to_s
