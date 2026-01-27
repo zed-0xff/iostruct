@@ -50,7 +50,7 @@ describe IOStruct do
     context 'when two fields have same offset' do
       it 'fails' do
         expect {
-          klass = IOStruct.new(
+          IOStruct.new(
             struct_name: 'Point',
             fields: {
               x: { type: :int, offset: 0 },

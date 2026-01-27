@@ -62,7 +62,7 @@ describe IOStruct do
 
     it "reads correct number of bytes from IO" do
       io = StringIO.new(data * 2)
-      x = struct.read(io)
+      struct.read(io)
       expect(io.pos).to eq 2
     end
 
@@ -127,9 +127,7 @@ describe IOStruct do
     context 'when src is an IO' do
       it 'is set to the current IO position' do
         a = []
-        while !io.eof?
-          a << struct.read(io)
-        end
+        a << struct.read(io) until io.eof?
         expect(a.map(&:__offset)).to eq (0...0x400).step(0x10).to_a
       end
     end

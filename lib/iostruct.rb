@@ -156,7 +156,7 @@ module IOStruct
               raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
-            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
+            0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f"
           else
             v.inspect
@@ -198,7 +198,7 @@ module IOStruct
               raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
-            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
+            0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f"
           else
             v.inspect
