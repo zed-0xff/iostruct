@@ -6,14 +6,14 @@ describe IOStruct do
     context "when set" do
       it "uses the custom name" do
         x = described_class.new('LL', :x, :y, struct_name: 'Point')
-        expect(x.new.inspect).to match /<Point x=nil y=nil>/
+        expect(x.new.inspect).to match(/<Point x=nil y=nil>/)
       end
     end
 
     context "when not set" do
       it "has default name" do
         x = described_class.new('LL', :x, :y)
-        expect(x.new.inspect).to match /<struct x=nil y=nil>/
+        expect(x.new.inspect).to match(/<struct x=nil y=nil>/)
       end
     end
   end

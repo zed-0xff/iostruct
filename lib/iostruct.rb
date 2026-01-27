@@ -34,9 +34,9 @@ module IOStruct
       include InstanceMethods
       include NestedInstanceMethods if finfos.any?(&:fmt)
       if inspect == :hex
-        include HexInspect 
+        include HexInspect
       else
-        include DecInspect 
+        include DecInspect
       end
       define_singleton_method(:to_s) { struct_name } if struct_name
       define_singleton_method(:name) { struct_name } if struct_name
@@ -126,7 +126,7 @@ module IOStruct
       self.class::FIELDS.each do |k, v|
         next unless v.fmt
 
-        if value = self[k]
+        if (value = self[k])
           self[k] = v.fmt.is_a?(String) ? value.unpack(v.fmt) : v.fmt.read(value)
         end
       end
@@ -135,17 +135,17 @@ module IOStruct
 
   module DecInspect
     def to_table
-      values = self.to_a
+      values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
         v = values[idx]
         fname, f = el
 
         "#{fname}=" +
-          case 
+          case
           when f.nil? # unknown field type
             v.inspect
           when f.type == Integer
-            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Integer" error
+            v ||= 0 # avoid "`sprintf': can't convert nil into Integer" error
             # display as unsigned, because signed %x looks ugly: "..f" for -1
             case f.size
             when 1 then "%4d" % v
@@ -156,8 +156,8 @@ module IOStruct
               raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
-            0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
-            "%8.3f"
+            v ||= 0 # avoid "`sprintf': can't convert nil into Float" error
+            "%8.3f" % v
           else
             v.inspect
           end
@@ -177,17 +177,17 @@ module IOStruct
     end
 
     def to_table
-      values = self.to_a
+      values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
         v = values[idx]
         fname, f = el
 
         "#{fname}=" +
-          case 
+          case
           when f.nil? # unknown field type
             v.inspect
           when f.type == Integer
-            v = 0 if v.nil? # avoid "`sprintf': can't convert nil into Integer" error
+            v ||= 0 # avoid "`sprintf': can't convert nil into Integer" error
             # display as unsigned, because signed %x looks ugly: "..f" for -1
             case f.size
             when 1 then "%2x" % (v & 0xff)
@@ -198,8 +198,8 @@ module IOStruct
               raise "Unsupported Integer size #{f.size} for field #{fname}"
             end
           when f.type == Float
-            0 if v.nil? # avoid "`sprintf': can't convert nil into Float" error
-            "%8.3f"
+            v ||= 0 # avoid "`sprintf': can't convert nil into Float" error
+            "%8.3f" % v
           else
             v.inspect
           end

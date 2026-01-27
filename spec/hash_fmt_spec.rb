@@ -12,7 +12,7 @@ describe IOStruct do
         },
         struct_name: 'Point'
       )
-      expect(klass.new.inspect).to match /<Point x=nil y=nil z=nil>/
+      expect(klass.new.inspect).to match(/<Point x=nil y=nil z=nil>/)
       expect(klass.size).to eq(12)
       expect(klass::SIZE).to eq(12)
     end
@@ -26,7 +26,7 @@ describe IOStruct do
         },
         struct_name: 'Point'
       )
-      expect(klass.new.inspect).to match /<Point x=nil y=nil z=nil>/
+      expect(klass.new.inspect).to match(/<Point x=nil y=nil z=nil>/)
     end
 
     it "respects :offset" do
@@ -38,7 +38,7 @@ describe IOStruct do
           z: { type: :int, offset: 0x10 },
         }
       )
-      expect(klass.new.inspect).to match /<Point x=nil y=nil z=nil>/
+      expect(klass.new.inspect).to match(/<Point x=nil y=nil z=nil>/)
       expect(klass.size).to eq(0x14)
 
       obj = klass.read((0..0x20).to_a.pack('i*'))
@@ -49,7 +49,7 @@ describe IOStruct do
 
     context 'when two fields have same offset' do
       it 'fails' do
-        expect {
+        expect do
           described_class.new(
             struct_name: 'Point',
             fields: {
@@ -57,7 +57,7 @@ describe IOStruct do
               y: { type: :char, offset: 0 },
             }
           )
-        }.to raise_error(RuntimeError)
+        end.to raise_error(RuntimeError)
       end
     end
 

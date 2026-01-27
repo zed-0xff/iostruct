@@ -9,6 +9,9 @@ Style/FrozenStringLiteralComment:
   Enabled: false
 
 
+RSpec/ContextWording:
+  Enabled: false
+
 RSpec/MultipleExpectations:
   Enabled: false
 

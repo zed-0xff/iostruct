@@ -17,7 +17,7 @@ module IOStruct
 
       'd' => ['double'],
       'f' => ['float'],
-    }
+    }.freeze
 
     KNOWN_FIELD_TYPES = KNOWN_FIELD_TYPES_REVERSED.map { |t, a| a.map { |v| [v, t] } }.flatten.each_slice(2).to_h
 
