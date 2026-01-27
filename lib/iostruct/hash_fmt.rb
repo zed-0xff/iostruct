@@ -42,7 +42,7 @@ module IOStruct
         if type.is_a?(Hash)
           f_offset = type.fetch(:offset, offset)
           if f_offset > offset
-            fmt_arr << "x#{f_offset-offset}"
+            fmt_arr << "x#{f_offset - offset}"
           elsif f_offset < offset
             raise "#{struct_name}: field #{f_name.inspect} overlaps previous field"
           end

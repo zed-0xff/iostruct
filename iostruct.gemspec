@@ -14,11 +14,15 @@ Gem::Specification.new do |s|
   s.files    = `git ls-files`.split($/)
   s.homepage = "http://github.com/zed-0xff/iostruct"
   s.licenses = ["MIT"]
-  s.require_paths = ["lib"]
   s.summary  = "A Struct that can read/write itself from/to IO-like objects"
+  s.require_paths = ["lib"]
 
   s.add_development_dependency "bundler"
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
+
+  s.add_development_dependency "rubocop"
+  s.add_development_dependency "rubocop-rake"
+  s.add_development_dependency "rubocop-rspec"
 end
 

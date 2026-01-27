@@ -81,7 +81,7 @@ describe IOStruct do
           y: :int,
         },
       )
-      expect(klass.size).to eq(4*5)
+      expect(klass.size).to eq(4 * 5)
 
       v = klass.read([1,2,3,4,5,6,7].pack('i*'))
 

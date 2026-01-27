@@ -1,0 +1,9 @@
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
+
+Style/StringLiterals:
+  Enabled: false
+
+Style/NumericLiterals:
+  Enabled: false

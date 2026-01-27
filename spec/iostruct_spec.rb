@@ -61,7 +61,7 @@ describe IOStruct do
     end
 
     it "reads correct number of bytes from IO" do
-      io = StringIO.new(data*2)
+      io = StringIO.new(data * 2)
       x = struct.read(io)
       expect(io.pos).to eq 2
     end
@@ -93,6 +93,7 @@ describe IOStruct do
     expect(struct.pack).to eq data
   end
 
+  # rubocop:disable RSpec/RepeatedExample
   ['n', 'N', 'S>', 'L>', 'I>'].each do |fmt|
     it "unpacks unsigned big-endian '#{fmt}'" do
       a = [12345]
@@ -112,6 +113,7 @@ describe IOStruct do
       expect(x.pack).to eq data
     end
   end
+  # rubocop:enable RSpec/RepeatedExample
 
   it "throws exception on unknown format" do
     expect { IOStruct.new('K', :x) }.to raise_error('Unknown field type "K"')
@@ -147,7 +149,7 @@ describe IOStruct do
         expect(signed_struct.new.to_table).to eq(
           "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
         )
-        expect(signed_struct.read("\xff"*16).to_table).to eq(
+        expect(signed_struct.read("\xff" * 16).to_table).to eq(
           "<struct f0=ff f1=ffff f3=ffffffff f7=ffffffffffffffff>"
         )
       end
@@ -157,7 +159,7 @@ describe IOStruct do
         expect(unsigned_struct.new.to_table).to eq(
           "<struct f0= 0 f1=   0 f3=       0 f7=               0>"
         )
-        expect(unsigned_struct.read("\xff"*16).to_table).to eq(
+        expect(unsigned_struct.read("\xff" * 16).to_table).to eq(
           "<struct f0=ff f1=ffff f3=ffffffff f7=ffffffffffffffff>"
         )
       end
@@ -181,7 +183,7 @@ describe IOStruct do
         expect(signed_struct.new.to_table).to eq(
           "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
         )
-        expect(signed_struct.read("\xff"*16).to_table).to eq(
+        expect(signed_struct.read("\xff" * 16).to_table).to eq(
           "<struct f0=  -1 f1=    -1 f3=         -1 f7=                  -1>"
         )
         expect(signed_struct.read("\x80\x00\x80\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x80").to_table).to eq(
@@ -194,7 +196,7 @@ describe IOStruct do
         expect(unsigned_struct.new.to_table).to eq(
           "<struct f0=   0 f1=     0 f3=          0 f7=                   0>"
         )
-        expect(unsigned_struct.read("\xff"*16).to_table).to eq(
+        expect(unsigned_struct.read("\xff" * 16).to_table).to eq(
           "<struct f0= 255 f1= 65535 f3= 4294967295 f7=18446744073709551615>"
         )
       end

@@ -48,12 +48,12 @@ module IOStruct
         len = len.empty? ? 1 : len.to_i
         case type
         when 'A', 'a', 'x', 'Z'
-          fields << FieldInfo.new(klass, size*len, offset) if klass
+          fields << FieldInfo.new(klass, size * len, offset) if klass
           offset += len
         when 'H', 'h'
           # XXX ruby's String#unpack length for hex strings is in characters, not bytes, i.e. "x".unpack("H2") => ["78"]
-          fields << FieldInfo.new(klass, size*len/2, offset) if klass
-          offset += len/2
+          fields << FieldInfo.new(klass, size * len / 2, offset) if klass
+          offset += len / 2
         else
           len.times do |i|
             fields << FieldInfo.new(klass, size, offset)
