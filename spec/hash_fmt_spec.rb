@@ -151,7 +151,7 @@ describe IOStruct do
           points: { type: point, count: 3 },
         }
       )
-      expect(polygon.size).to eq(4 + 8 * 3)
+      expect(polygon.size).to eq(4 + (8 * 3))
 
       data = [3, 10, 20, 30, 40, 50, 60].pack('i*')
       p = polygon.read(data)

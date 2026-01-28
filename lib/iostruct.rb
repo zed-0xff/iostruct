@@ -115,21 +115,20 @@ module IOStruct
       super
       self.class::FIELDS.each do |k, v|
         next unless v.fmt
+        next unless (value = self[k])
 
-        if (value = self[k])
-          self[k] =
-            if v.fmt.is_a?(String)
-              # Primitive array (e.g., "i3" for 3 ints)
-              value.unpack(v.fmt)
-            elsif v.count && v.count > 1
-              # Nested struct array: split data and read each chunk
-              item_size = v.fmt.size
-              v.count.times.map { |i| v.fmt.read(value[i * item_size, item_size]) }
-            else
-              # Single nested struct
-              v.fmt.read(value)
-            end
-        end
+        self[k] =
+          if v.fmt.is_a?(String)
+            # Primitive array (e.g., "i3" for 3 ints)
+            value.unpack(v.fmt)
+          elsif v.count && v.count > 1
+            # Nested struct array: split data and read each chunk
+            item_size = v.fmt.size
+            v.count.times.map { |i| v.fmt.read(value[i * item_size, item_size]) }
+          else
+            # Single nested struct
+            v.fmt.read(value)
+          end
       end
     end
 

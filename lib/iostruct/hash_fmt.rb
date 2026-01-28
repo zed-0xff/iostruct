@@ -2,6 +2,7 @@
 
 module IOStruct
   module HashFmt
+    # rubocop:disable Style/WordArray
     KNOWN_FIELD_TYPES_REVERSED = {
       'C' => ['uint8_t',  'unsigned char', '_BYTE'],
       'S' => ['uint16_t', 'unsigned short'],
@@ -31,6 +32,7 @@ module IOStruct
       'G' => ['double_be'],  # double-precision, big-endian
       'g' => ['float_be'],   # single-precision, big-endian
     }.freeze
+    # rubocop:enable Style/WordArray
 
     KNOWN_FIELD_TYPES = KNOWN_FIELD_TYPES_REVERSED.map { |t, a| a.map { |v| [v, t] } }.flatten.each_slice(2).to_h
 
@@ -88,14 +90,12 @@ module IOStruct
         if f_count != 1
           if f_fmt.is_a?(Class)
             # Nested struct array: keep f_fmt as the Class, just update size and type_code
-            f_size *= f_count
-            type_code = "a#{f_size}"
           else
             # Primitive array: set f_fmt to pack format string (e.g., "i3")
             f_fmt = "#{type_code}#{f_count}"
-            f_size *= f_count
-            type_code = "a#{f_size}"
           end
+          f_size *= f_count
+          type_code = "a#{f_size}"
         end
 
         offset = f_offset + f_size
