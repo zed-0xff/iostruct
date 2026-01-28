@@ -239,5 +239,49 @@ describe IOStruct do
         expect(klass.read("\xff").a).to eq 255 # unsigned
       end
     end
+
+    context "endian types" do
+      it "supports big-endian uint16" do
+        klass = described_class.new(fields: { a: 'uint16_be' })
+        expect(klass.size).to eq 2
+        expect(klass.read("\x01\x02").a).to eq 0x0102 # big-endian
+      end
+
+      it "supports big-endian uint32" do
+        klass = described_class.new(fields: { a: 'uint32_be' })
+        expect(klass.size).to eq 4
+        expect(klass.read("\x01\x02\x03\x04").a).to eq 0x01020304
+      end
+
+      it "supports little-endian uint16" do
+        klass = described_class.new(fields: { a: 'uint16_le' })
+        expect(klass.size).to eq 2
+        expect(klass.read("\x01\x02").a).to eq 0x0201 # little-endian
+      end
+
+      it "supports little-endian uint32" do
+        klass = described_class.new(fields: { a: 'uint32_le' })
+        expect(klass.size).to eq 4
+        expect(klass.read("\x01\x02\x03\x04").a).to eq 0x04030201
+      end
+
+      it "supports alternate names (be16, le32, etc.)" do
+        klass = described_class.new(fields: {
+                                      a: 'be16',
+                                      b: 'be32',
+                                      c: 'le16',
+                                      d: 'le32'
+                                    })
+        expect(klass.size).to eq(2 + 4 + 2 + 4)
+      end
+
+      it "round-trips big-endian values" do
+        klass = described_class.new(fields: { a: 'uint16_be', b: 'uint32_be' })
+        obj = klass.read([0x1234, 0xDEADBEEF].pack('nN'))
+        expect(obj.a).to eq 0x1234
+        expect(obj.b).to eq 0xDEADBEEF
+        expect(obj.pack).to eq [0x1234, 0xDEADBEEF].pack('nN')
+      end
+    end
   end
 end

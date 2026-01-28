@@ -15,8 +15,21 @@ module IOStruct
       'l' => ['long',    'signed long'],
       'q' => ['int64_t', 'long long', 'signed long long'],
 
+      # Big-endian (network byte order)
+      'n' => ['uint16_be', 'uint16_t_be', 'be16'],
+      'N' => ['uint32_be', 'uint32_t_be', 'be32'],
+
+      # Little-endian (VAX byte order)
+      'v' => ['uint16_le', 'uint16_t_le', 'le16'],
+      'V' => ['uint32_le', 'uint32_t_le', 'le32'],
+
+      # Floats
       'd' => ['double'],
       'f' => ['float'],
+      'E' => ['double_le'],  # double-precision, little-endian
+      'e' => ['float_le'],   # single-precision, little-endian
+      'G' => ['double_be'],  # double-precision, big-endian
+      'g' => ['float_be'],   # single-precision, big-endian
     }.freeze
 
     KNOWN_FIELD_TYPES = KNOWN_FIELD_TYPES_REVERSED.map { |t, a| a.map { |v| [v, t] } }.flatten.each_slice(2).to_h

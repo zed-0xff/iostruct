@@ -1,5 +1,14 @@
 # 0.6.0
 
+- added big-endian and little-endian type support in hash format:
+
+   ```ruby
+   IOStruct.new(fields: {
+     be_val: 'uint16_be',  # or 'be16', 'uint16_t_be'
+     le_val: 'uint32_le',  # or 'le32', 'uint32_t_le'
+   })
+   ```
+
 - added alternative hash-based struct definition with C type names:
 
    ```ruby
