@@ -1,3 +1,38 @@
+# 0.6.0
+
+- added alternative hash-based struct definition with C type names:
+
+   ```ruby
+   Point = IOStruct.new(
+     struct_name: 'Point',
+     fields: {
+       x: 'int',
+       y: :int,
+       z: { type: :int, offset: 0x10 },  # explicit offset
+     }
+   )
+
+   # supports nested structs
+   Rect = IOStruct.new(fields: { topLeft: Point, bottomRight: Point })
+
+   # supports arrays
+   IOStruct.new(fields: { values: { type: 'int', count: 10 } })
+   ```
+
+- added `pack` support for nested structs and arrays:
+
+   ```ruby
+   r = Rect.read(data)
+   r.pack  # now works!
+   ```
+
+- added `to_table` method with decimal formatting (`:inspect => :dec`)
+- added `get_type_size` helper method
+- deprecated `inspect_name_override` in favor of `struct_name`
+- fixed `to_table` handling of unknown field types
+- fixed `_BYTE` type alias (was incorrectly mapped to both signed and unsigned)
+- fixed operator precedence bug in `format_integer` methods
+
 # 0.5.0
 
  - added `inspect_name_override` constructor param, useful for dynamic declarations:
