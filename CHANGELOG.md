@@ -1,4 +1,4 @@
-# 0.6.0
+# 0.7.0
 
 - added big-endian and little-endian type support in hash format:
 
@@ -8,6 +8,25 @@
      le_val: 'uint32_le',  # or 'le32', 'uint32_t_le'
    })
    ```
+
+- added nested struct arrays:
+
+   ```ruby
+   Point = IOStruct.new(fields: { x: 'int', y: 'int' })
+   Polygon = IOStruct.new(fields: {
+     num_points: 'int',
+     points: { type: Point, count: 3 },  # array of 3 nested structs
+   })
+   p = Polygon.read(data)
+   p.points[0].x  # access nested struct in array
+   p.pack         # packing works too!
+   ```
+
+- added endian-specific float types: `float_le`, `float_be`, `double_le`, `double_be`
+- improved class name handling in inspect for subclasses
+- `DecInspect` now defines `to_s` for consistent behavior with `HexInspect`
+
+# 0.6.0
 
 - added alternative hash-based struct definition with C type names:
 
