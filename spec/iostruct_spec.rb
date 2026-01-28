@@ -167,6 +167,7 @@ describe IOStruct do
       expect(struct.new.inspect).to match(/<MyStruct/)
     end
   end
+
   describe ":name" do
     context "when set" do
       it "uses the custom name" do

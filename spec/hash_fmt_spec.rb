@@ -187,28 +187,28 @@ describe IOStruct do
     context "C type aliases" do
       it "supports uint types" do
         klass = described_class.new(fields: {
-          a: 'uint8_t',
-          b: 'uint16_t',
-          c: 'uint32_t',
-          d: 'uint64_t'
-        })
+                                      a: 'uint8_t',
+                                      b: 'uint16_t',
+                                      c: 'uint32_t',
+                                      d: 'uint64_t'
+                                    })
         expect(klass.size).to eq(1 + 2 + 4 + 8)
       end
 
       it "supports int types" do
         klass = described_class.new(fields: {
-          a: 'int8_t',
-          b: 'int16_t',
-          c: 'int32_t',
-          d: 'int64_t'
-        })
+                                      a: 'int8_t',
+                                      b: 'int16_t',
+                                      c: 'int32_t',
+                                      d: 'int64_t'
+                                    })
         expect(klass.size).to eq(1 + 2 + 4 + 8)
       end
 
       it "supports _BYTE type" do
         klass = described_class.new(fields: { a: '_BYTE' })
         expect(klass.size).to eq 1
-        expect(klass.read("\xff").a).to eq 255  # unsigned
+        expect(klass.read("\xff").a).to eq 255 # unsigned
       end
     end
   end

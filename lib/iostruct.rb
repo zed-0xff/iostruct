@@ -137,6 +137,7 @@ module IOStruct
   module InspectBase
     INT_MASKS = { 1 => 0xff, 2 => 0xffff, 4 => 0xffffffff, 8 => 0xffffffffffffffff }.freeze
 
+    # rubocop:disable Lint/DuplicateBranch
     def to_table
       values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
@@ -158,6 +159,7 @@ module IOStruct
           end
       end.join(' ') + ">"
     end
+    # rubocop:enable Lint/DuplicateBranch
   end
 
   module DecInspect
@@ -165,8 +167,9 @@ module IOStruct
 
     DEC_FMTS = { 1 => "%4d", 2 => "%6d", 4 => "%11d", 8 => "%20d" }.freeze
 
-    def format_integer(v, size, fname)
-      DEC_FMTS[size] % v || raise("Unsupported Integer size #{size} for field #{fname}")
+    def format_integer(value, size, fname)
+      fmt = DEC_FMTS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
+      fmt % value
     end
   end
 
@@ -190,9 +193,10 @@ module IOStruct
     end
 
     # display as unsigned, because signed %x looks ugly: "..f" for -1
-    def format_integer(v, size, fname)
+    def format_integer(value, size, fname)
+      fmt  = HEX_FMTS[size]  || raise("Unsupported Integer size #{size} for field #{fname}")
       mask = INT_MASKS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
-      HEX_FMTS[size] % (v & mask)
+      fmt % (value & mask)
     end
   end
 end # IOStruct

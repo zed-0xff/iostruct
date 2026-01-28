@@ -8,6 +8,8 @@ Layout/SpaceInsideParens:
 Style/FrozenStringLiteralComment:
   Enabled: false
 
+Style/SymbolArray:
+  Enabled: false
 
 RSpec/ContextWording:
   Enabled: false
