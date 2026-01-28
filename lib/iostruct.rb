@@ -35,10 +35,13 @@ module IOStruct
       extend ClassMethods
       include InstanceMethods
       include NestedInstanceMethods if finfos.any?(&:fmt)
-      if inspect == :hex
+      case inspect
+      when :hex
         include HexInspect
-      else
+      when :dec
         include DecInspect
+      else
+        # ruby default inspect
       end
       define_singleton_method(:to_s) { struct_name } if struct_name
       define_singleton_method(:name) { struct_name } if struct_name
@@ -53,6 +56,10 @@ module IOStruct
       offset += f.size
     end
     names
+  end
+
+  def self.get_name(klass)
+    (klass.respond_to?(:name) && klass.name) || 'struct'
   end
 
   module ClassMethods
@@ -70,10 +77,6 @@ module IOStruct
           raise "[?] don't know how to read from #{src.inspect}"
         end
       new(*data.unpack(const_get('FORMAT'))).tap { |x| x.__offset = pos }
-    end
-
-    def name
-      'struct'
     end
 
     def size
@@ -159,7 +162,7 @@ module IOStruct
     # rubocop:disable Lint/DuplicateBranch
     def to_table
       values = to_a
-      "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
+      "<#{IOStruct.get_name(self.class)} " + self.class::FIELDS.map.with_index do |el, idx|
         v = values[idx]
         fname, f = el
 
@@ -179,6 +182,10 @@ module IOStruct
       end.join(' ') + ">"
     end
     # rubocop:enable Lint/DuplicateBranch
+
+    def inspect
+      to_s
+    end
   end
 
   module DecInspect
@@ -190,6 +197,10 @@ module IOStruct
       fmt = DEC_FMTS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
       fmt % value
     end
+
+    def to_s
+      "<#{IOStruct.get_name(self.class)} " + to_h.map { |k, v| "#{k}=#{v.inspect}" }.join(' ') + ">"
+    end
   end
 
   module HexInspect
@@ -197,25 +208,21 @@ module IOStruct
 
     HEX_FMTS = { 1 => "%2x", 2 => "%4x", 4 => "%8x", 8 => "%16x" }.freeze
 
+    # display as unsigned, because signed %x looks ugly: "..f" for -1
+    def format_integer(value, size, fname)
+      fmt  = HEX_FMTS[size]  || raise("Unsupported Integer size #{size} for field #{fname}")
+      mask = INT_MASKS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
+      fmt % (value & mask)
+    end
+
     def to_s
-      "<#{self.class.name} " + to_h.map do |k, v|
+      "<#{IOStruct.get_name(self.class)} " + to_h.map do |k, v|
         if v.is_a?(Integer) && v > 9
           "#{k}=0x%x" % v
         else
           "#{k}=#{v.inspect}"
         end
       end.join(' ') + ">"
-    end
-
-    def inspect
-      to_s
-    end
-
-    # display as unsigned, because signed %x looks ugly: "..f" for -1
-    def format_integer(value, size, fname)
-      fmt  = HEX_FMTS[size]  || raise("Unsupported Integer size #{size} for field #{fname}")
-      mask = INT_MASKS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
-      fmt % (value & mask)
     end
   end
 end # IOStruct

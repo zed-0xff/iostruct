@@ -43,6 +43,40 @@ describe IOStruct do
     end
   end
 
+  describe "#inspect" do
+    [nil, "MyClass"].each do |struct_name|
+      context "when struct_name is #{struct_name.inspect}" do
+        [:hex, :dec].each do |inspect_mode|
+          context "when inspect is :#{inspect_mode}" do
+            context "for IOStruct" do
+              it "shows default struct name" do
+                struct = described_class.new('L S C', :a, :b, :c, inspect: inspect_mode, struct_name: struct_name)
+                cname = struct_name || "struct"
+                expect(struct.new.inspect).to match(/<#{cname} a=/)
+              end
+            end
+
+            context "for IOStruct anonymous subclass" do
+              it "shows default struct name" do
+                struct = Class.new( described_class.new('L S C', :a, :b, :c, inspect: inspect_mode, struct_name: struct_name) )
+                cname = struct_name || "struct"
+                expect(struct.new.inspect).to match(/<#{cname} a=/)
+              end
+            end
+
+            context "for named IOStruct subclass" do
+              it "shows custom struct name" do
+                stub_const("C1", described_class.new('L S C', :a, :b, :c, inspect: inspect_mode, struct_name: struct_name) )
+                cname = struct_name || "C1"
+                expect(C1.new.inspect).to match(/<#{cname} a=/)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   describe "hash-style initialization" do
     let(:struct) { described_class.new('L S C', :a, :b, :c) }
 
@@ -184,7 +218,7 @@ describe IOStruct do
     end
   end
 
-  describe "#read" do
+  describe "read" do
     let(:a) { [12345, 56789] }
     let(:data) { a.pack('L2') }
 

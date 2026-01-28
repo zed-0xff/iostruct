@@ -23,5 +23,8 @@ RSpec/ExampleLength:
 RSpec/ExampleWording:
   Enabled: false
 
+RSpec/NestedGroups:
+  Enabled: false
+
 RSpec/SpecFilePathFormat:
   Enabled: false
