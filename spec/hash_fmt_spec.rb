@@ -143,6 +143,34 @@ describe IOStruct do
       expect(reparsed.bottomRight.y).to eq 200
     end
 
+    it "supports nested struct arrays" do
+      point = described_class.new(fields: { x: "int", y: :int })
+      polygon = described_class.new(
+        fields: {
+          num_points: 'int',
+          points: { type: point, count: 3 },
+        }
+      )
+      expect(polygon.size).to eq(4 + 8 * 3)
+
+      data = [3, 10, 20, 30, 40, 50, 60].pack('i*')
+      p = polygon.read(data)
+
+      expect(p.num_points).to eq 3
+      expect(p.points.size).to eq 3
+      expect(p.points[0]).to be_instance_of(point)
+      expect(p.points[0].x).to eq 10
+      expect(p.points[0].y).to eq 20
+      expect(p.points[1].x).to eq 30
+      expect(p.points[1].y).to eq 40
+      expect(p.points[2].x).to eq 50
+      expect(p.points[2].y).to eq 60
+
+      # Test round-trip
+      reparsed = polygon.read(p.pack)
+      expect(reparsed.points[2].y).to eq 60
+    end
+
     it "packs arrays" do
       klass = described_class.new(
         fields: {

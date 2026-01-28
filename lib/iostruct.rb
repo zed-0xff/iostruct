@@ -117,7 +117,18 @@ module IOStruct
         next unless v.fmt
 
         if (value = self[k])
-          self[k] = v.fmt.is_a?(String) ? value.unpack(v.fmt) : v.fmt.read(value)
+          self[k] =
+            if v.fmt.is_a?(String)
+              # Primitive array (e.g., "i3" for 3 ints)
+              value.unpack(v.fmt)
+            elsif v.count && v.count > 1
+              # Nested struct array: split data and read each chunk
+              item_size = v.fmt.size
+              v.count.times.map { |i| v.fmt.read(value[i * item_size, item_size]) }
+            else
+              # Single nested struct
+              v.fmt.read(value)
+            end
         end
       end
     end
@@ -128,7 +139,16 @@ module IOStruct
         next value unless v&.fmt && value
 
         # Reverse the unpacking done in initialize
-        v.fmt.is_a?(String) ? value.pack(v.fmt) : value.pack
+        if v.fmt.is_a?(String)
+          # Primitive array
+          value.pack(v.fmt)
+        elsif v.count && v.count > 1
+          # Nested struct array: pack each and concatenate
+          value.map(&:pack).join
+        else
+          # Single nested struct
+          value.pack
+        end
       end
       values.pack self.class.const_get('FORMAT')
     end

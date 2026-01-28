@@ -73,9 +73,16 @@ module IOStruct
         end
 
         if f_count != 1
-          f_fmt = "#{type_code}#{f_count}"
-          f_size *= f_count
-          type_code = "a#{f_size}"
+          if f_fmt.is_a?(Class)
+            # Nested struct array: keep f_fmt as the Class, just update size and type_code
+            f_size *= f_count
+            type_code = "a#{f_size}"
+          else
+            # Primitive array: set f_fmt to pack format string (e.g., "i3")
+            f_fmt = "#{type_code}#{f_count}"
+            f_size *= f_count
+            type_code = "a#{f_size}"
+          end
         end
 
         offset = f_offset + f_size
