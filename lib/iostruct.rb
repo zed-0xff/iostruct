@@ -172,7 +172,7 @@ module IOStruct
             v.inspect
           when f.type == Integer
             v ||= 0 # avoid "`sprintf': can't convert nil into Integer" error
-            format_integer(v, f.size, fname)
+            format_int(v, f.size, fname)
           when f.type == Float
             v ||= 0 # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f" % v
@@ -183,8 +183,15 @@ module IOStruct
     end
     # rubocop:enable Lint/DuplicateBranch
 
+    # don't make inspect an alias to to_s or vice versa, because:
+    #  - ruby's default struct inspect() and to_s() returns same result, but they are different methods
+    #  - inspect/to_s may already be used by some code (zsteg), where aliasing would break things
     def inspect
-      to_s
+      _inspect
+    end
+
+    def to_s
+      _inspect
     end
   end
 
@@ -193,12 +200,14 @@ module IOStruct
 
     DEC_FMTS = { 1 => "%4d", 2 => "%6d", 4 => "%11d", 8 => "%20d" }.freeze
 
-    def format_integer(value, size, fname)
+    def format_int(value, size, fname)
       fmt = DEC_FMTS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
       fmt % value
     end
 
-    def to_s
+    private
+
+    def _inspect
       "<#{IOStruct.get_name(self.class)} " + to_h.map { |k, v| "#{k}=#{v.inspect}" }.join(' ') + ">"
     end
   end
@@ -209,13 +218,15 @@ module IOStruct
     HEX_FMTS = { 1 => "%2x", 2 => "%4x", 4 => "%8x", 8 => "%16x" }.freeze
 
     # display as unsigned, because signed %x looks ugly: "..f" for -1
-    def format_integer(value, size, fname)
+    def format_int(value, size, fname)
       fmt  = HEX_FMTS[size]  || raise("Unsupported Integer size #{size} for field #{fname}")
       mask = INT_MASKS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
       fmt % (value & mask)
     end
 
-    def to_s
+    private
+
+    def _inspect
       "<#{IOStruct.get_name(self.class)} " + to_h.map do |k, v|
         if v.is_a?(Integer) && v > 9
           "#{k}=0x%x" % v
