@@ -2,6 +2,25 @@ require 'spec_helper'
 require 'stringio'
 
 describe IOStruct do
+  describe ".get_type_size" do
+    it "returns size for known types" do
+      expect(described_class.get_type_size('int')).to eq 4
+      expect(described_class.get_type_size('char')).to eq 1
+      expect(described_class.get_type_size('short')).to eq 2
+      expect(described_class.get_type_size('long long')).to eq 8
+      expect(described_class.get_type_size('double')).to eq 8
+      expect(described_class.get_type_size('float')).to eq 4
+    end
+
+    it "works with symbol input" do
+      expect(described_class.get_type_size(:int)).to eq 4
+    end
+
+    it "returns nil for unknown types" do
+      expect(described_class.get_type_size('unknown')).to be_nil
+    end
+  end
+
   describe "hash format ctor" do
     it "works" do
       klass = described_class.new(
@@ -108,6 +127,89 @@ describe IOStruct do
       expect(r.topLeft.y).to eq(20)
       expect(r.bottomRight.x).to eq(100)
       expect(r.bottomRight.y).to eq(200)
+    end
+
+    it "packs nested structs" do
+      point = described_class.new(fields: { x: "int", y: :int })
+      rect = described_class.new(fields: { topLeft: point, bottomRight: point })
+
+      r = rect.read([10, 20, 100, 200].pack('i*'))
+      packed = r.pack
+      reparsed = rect.read(packed)
+
+      expect(reparsed.topLeft.x).to eq 10
+      expect(reparsed.topLeft.y).to eq 20
+      expect(reparsed.bottomRight.x).to eq 100
+      expect(reparsed.bottomRight.y).to eq 200
+    end
+
+    it "packs arrays" do
+      klass = described_class.new(
+        fields: {
+          x: "int",
+          a: { type: 'int', count: 3 },
+          y: :int,
+        }
+      )
+
+      v = klass.read([1, 2, 3, 4, 5].pack('i*'))
+      packed = v.pack
+      reparsed = klass.read(packed)
+
+      expect(reparsed.x).to eq 1
+      expect(reparsed.a).to eq [2, 3, 4]
+      expect(reparsed.y).to eq 5
+    end
+
+    context "error handling" do
+      it "raises on unknown field type" do
+        expect do
+          described_class.new(fields: { x: "unknown_type" })
+        end.to raise_error(/unknown field type/)
+      end
+
+      it "raises on invalid type format" do
+        expect do
+          described_class.new(fields: { x: 12345 })
+        end.to raise_error(/unexpected field desc type/)
+      end
+
+      it "raises when forced size is smaller than actual" do
+        expect do
+          described_class.new(
+            fields: { x: "int", y: "int", z: "int" },
+            size: 4
+          )
+        end.to raise_error(/actual struct size .* is greater than forced size/)
+      end
+    end
+
+    context "C type aliases" do
+      it "supports uint types" do
+        klass = described_class.new(fields: {
+          a: 'uint8_t',
+          b: 'uint16_t',
+          c: 'uint32_t',
+          d: 'uint64_t'
+        })
+        expect(klass.size).to eq(1 + 2 + 4 + 8)
+      end
+
+      it "supports int types" do
+        klass = described_class.new(fields: {
+          a: 'int8_t',
+          b: 'int16_t',
+          c: 'int32_t',
+          d: 'int64_t'
+        })
+        expect(klass.size).to eq(1 + 2 + 4 + 8)
+      end
+
+      it "supports _BYTE type" do
+        klass = described_class.new(fields: { a: '_BYTE' })
+        expect(klass.size).to eq 1
+        expect(klass.read("\xff").a).to eq 255  # unsigned
+      end
     end
   end
 end

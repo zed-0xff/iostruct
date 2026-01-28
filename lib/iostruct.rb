@@ -121,10 +121,22 @@ module IOStruct
         end
       end
     end
+
+    def pack
+      values = self.class::FIELDS.map do |k, v|
+        value = self[k]
+        next value unless v&.fmt && value
+
+        # Reverse the unpacking done in initialize
+        v.fmt.is_a?(String) ? value.pack(v.fmt) : value.pack
+      end
+      values.pack self.class.const_get('FORMAT')
+    end
   end
 
-  module DecInspect
-    # rubocop:disable Lint/DuplicateBranch
+  module InspectBase
+    INT_MASKS = { 1 => 0xff, 2 => 0xffff, 4 => 0xffffffff, 8 => 0xffffffffffffffff }.freeze
+
     def to_table
       values = to_a
       "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
@@ -137,15 +149,7 @@ module IOStruct
             v.inspect
           when f.type == Integer
             v ||= 0 # avoid "`sprintf': can't convert nil into Integer" error
-            # display as unsigned, because signed %x looks ugly: "..f" for -1
-            case f.size
-            when 1 then "%4d" % v
-            when 2 then "%6d" % v
-            when 4 then "%11d" % v
-            when 8 then "%20d" % v
-            else
-              raise "Unsupported Integer size #{f.size} for field #{fname}"
-            end
+            format_integer(v, f.size, fname)
           when f.type == Float
             v ||= 0 # avoid "`sprintf': can't convert nil into Float" error
             "%8.3f" % v
@@ -154,10 +158,23 @@ module IOStruct
           end
       end.join(' ') + ">"
     end
-    # rubocop:enable Lint/DuplicateBranch
+  end
+
+  module DecInspect
+    include InspectBase
+
+    DEC_FMTS = { 1 => "%4d", 2 => "%6d", 4 => "%11d", 8 => "%20d" }.freeze
+
+    def format_integer(v, size, fname)
+      DEC_FMTS[size] % v || raise("Unsupported Integer size #{size} for field #{fname}")
+    end
   end
 
   module HexInspect
+    include InspectBase
+
+    HEX_FMTS = { 1 => "%2x", 2 => "%4x", 4 => "%8x", 8 => "%16x" }.freeze
+
     def to_s
       "<#{self.class.name} " + to_h.map do |k, v|
         if v.is_a?(Integer) && v > 9
@@ -168,40 +185,14 @@ module IOStruct
       end.join(' ') + ">"
     end
 
-    # rubocop:disable Lint/DuplicateBranch
-    def to_table
-      values = to_a
-      "<#{self.class.name} " + self.class::FIELDS.map.with_index do |el, idx|
-        v = values[idx]
-        fname, f = el
-
-        "#{fname}=" +
-          case
-          when f.nil? # unknown field type
-            v.inspect
-          when f.type == Integer
-            v ||= 0 # avoid "`sprintf': can't convert nil into Integer" error
-            # display as unsigned, because signed %x looks ugly: "..f" for -1
-            case f.size
-            when 1 then "%2x" % (v & 0xff)
-            when 2 then "%4x" % (v & 0xffff)
-            when 4 then "%8x" % (v & 0xffffffff)
-            when 8 then "%16x" % (v & 0xffffffffffffffff)
-            else
-              raise "Unsupported Integer size #{f.size} for field #{fname}"
-            end
-          when f.type == Float
-            v ||= 0 # avoid "`sprintf': can't convert nil into Float" error
-            "%8.3f" % v
-          else
-            v.inspect
-          end
-      end.join(' ') + ">"
-    end
-    # rubocop:enable Lint/DuplicateBranch
-
     def inspect
       to_s
+    end
+
+    # display as unsigned, because signed %x looks ugly: "..f" for -1
+    def format_integer(v, size, fname)
+      mask = INT_MASKS[size] || raise("Unsupported Integer size #{size} for field #{fname}")
+      HEX_FMTS[size] % (v & mask)
     end
   end
 end # IOStruct

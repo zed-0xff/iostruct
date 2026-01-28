@@ -2,6 +2,171 @@ require 'spec_helper'
 require 'stringio'
 
 describe IOStruct do
+  describe "#pack" do
+    it "serializes struct back to binary" do
+      struct = described_class.new('L S C', :a, :b, :c)
+      obj = struct.new(a: 0x12345678, b: 0xABCD, c: 0xEF)
+      expect(obj.pack).to eq [0x12345678, 0xABCD, 0xEF].pack('L S C')
+    end
+
+    it "round-trips correctly" do
+      struct = described_class.new('L S C', :a, :b, :c)
+      data = [123, 456, 78].pack('L S C')
+      obj = struct.read(data)
+      expect(obj.pack).to eq data
+    end
+  end
+
+  describe "#empty?" do
+    let(:struct) { described_class.new('L S', :a, :b) }
+
+    it "returns true when all fields are zero" do
+      expect(struct.new(a: 0, b: 0)).to be_empty
+    end
+
+    it "returns true when all fields are nil" do
+      expect(struct.new).to be_empty
+    end
+
+    it "returns false when any field is non-zero" do
+      expect(struct.new(a: 1, b: 0)).not_to be_empty
+    end
+
+    it "returns true for null-filled strings" do
+      str_struct = described_class.new('a4', :name)
+      expect(str_struct.new(name: "\x00\x00\x00\x00")).to be_empty
+    end
+
+    it "returns false for non-empty strings" do
+      str_struct = described_class.new('a4', :name)
+      expect(str_struct.new(name: "test")).not_to be_empty
+    end
+  end
+
+  describe "hash-style initialization" do
+    let(:struct) { described_class.new('L S C', :a, :b, :c) }
+
+    it "initializes fields by name" do
+      obj = struct.new(a: 100, c: 50)
+      expect(obj.a).to eq 100
+      expect(obj.b).to be_nil
+      expect(obj.c).to eq 50
+    end
+  end
+
+  describe "auto-generated field names" do
+    it "generates names based on offset" do
+      struct = described_class.new('C S L')
+      expect(struct.members).to eq [:f0, :f1, :f3]
+    end
+  end
+
+  describe "field renaming" do
+    it "renames auto-generated fields via kwargs" do
+      struct = described_class.new('C S L', f0: :byte_field, f3: :long_field)
+      expect(struct.members).to eq [:byte_field, :f1, :long_field]
+    end
+
+    it "renames named fields via kwargs" do
+      struct = described_class.new('C S L', :a, :b, :c, a: :first, c: :last)
+      expect(struct.members).to eq [:first, :b, :last]
+    end
+  end
+
+  describe "float types" do
+    it "unpacks single-precision float (f/F)" do
+      data = [3.14159].pack('f')
+      struct = described_class.new('f', :val)
+      expect(struct.read(data).val).to be_within(0.0001).of(3.14159)
+      expect(struct::SIZE).to eq 4
+    end
+
+    it "unpacks double-precision float (d/D)" do
+      data = [3.141592653589793].pack('d')
+      struct = described_class.new('d', :val)
+      expect(struct.read(data).val).to be_within(0.0000001).of(3.141592653589793)
+      expect(struct::SIZE).to eq 8
+    end
+
+    it "unpacks little-endian floats (e/E)" do
+      data = [2.5].pack('e')
+      struct = described_class.new('e', :val)
+      expect(struct.read(data).val).to be_within(0.0001).of(2.5)
+    end
+
+    it "unpacks big-endian floats (g/G)" do
+      data = [2.5].pack('G')
+      struct = described_class.new('G', :val)
+      expect(struct.read(data).val).to be_within(0.0001).of(2.5)
+    end
+
+    it "formats floats in to_table" do
+      struct = described_class.new('f', :val)
+      obj = struct.new(val: 3.14159)
+      expect(obj.to_table).to match(/val=\s*3\.142/)
+    end
+  end
+
+  describe "signed integer types" do
+    it "reads signed 8-bit (c)" do
+      struct = described_class.new('c', :val)
+      expect(struct.read("\x80").val).to eq(-128)
+      expect(struct.read("\x7f").val).to eq(127)
+    end
+
+    it "reads signed 16-bit (s)" do
+      struct = described_class.new('s', :val)
+      expect(struct.read("\x00\x80").val).to eq(-32768)
+    end
+
+    it "reads signed 32-bit (i)" do
+      struct = described_class.new('i', :val)
+      expect(struct.read("\x00\x00\x00\x80").val).to eq(-2147483648)
+    end
+
+    it "reads signed 64-bit (q)" do
+      struct = described_class.new('q', :val)
+      expect(struct.read("\x00\x00\x00\x00\x00\x00\x00\x80").val).to eq(-9223372036854775808)
+    end
+  end
+
+  describe "string types" do
+    it "unpacks space-padded string (A)" do
+      struct = described_class.new('A8', :name)
+      obj = struct.read("hello   ")
+      expect(obj.name).to eq "hello"
+    end
+
+    it "unpacks null-terminated string (Z)" do
+      struct = described_class.new('Z8', :name)
+      obj = struct.read("hello\x00\x00\x00")
+      expect(obj.name).to eq "hello"
+    end
+
+    it "unpacks raw string (a)" do
+      struct = described_class.new('a8', :name)
+      obj = struct.read("hello\x00\x00\x00")
+      expect(obj.name).to eq "hello\x00\x00\x00"
+    end
+  end
+
+  describe "error handling" do
+    it "raises when no fmt and no :fields" do
+      expect { described_class.new }.to raise_error(/no fmt and no :fields/)
+    end
+
+    it "raises when reading from unsupported source" do
+      struct = described_class.new('L', :val)
+      expect { struct.read(12345) }.to raise_error(/don't know how to read/)
+    end
+  end
+
+  describe "inspect_name_override (deprecated)" do
+    it "works as alias for struct_name" do
+      struct = described_class.new('L', :val, inspect_name_override: 'MyStruct')
+      expect(struct.new.inspect).to match(/<MyStruct/)
+    end
+  end
   describe ":name" do
     context "when set" do
       it "uses the custom name" do

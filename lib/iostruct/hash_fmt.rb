@@ -9,7 +9,7 @@ module IOStruct
       'L' => ['unsigned long'],
       'Q' => ['uint64_t', 'unsigned long long'],
 
-      'c' => ['int8_t',  'char', 'signed char', '_BYTE'],
+      'c' => ['int8_t',  'char', 'signed char'],
       's' => ['int16_t', 'short', 'signed short'],
       'i' => ['int32_t', 'int', 'signed', 'signed int'],
       'l' => ['long',    'signed long'],
@@ -66,13 +66,8 @@ module IOStruct
         end
 
         unless type_code
-          case type
-          when String, Symbol
-            type_code = KNOWN_FIELD_TYPES[type.to_s]
-            raise "#{f_name}: unknown field type #{type.inspect}" unless type_code
-          else
-            raise "#{f_name}: unexpected field type type #{type.class}"
-          end
+          type_code = KNOWN_FIELD_TYPES[type]
+          raise "#{f_name}: unknown field type #{type.inspect}" unless type_code
 
           f_size, klass = PackFmt::FMTSPEC[type_code] || raise("Unknown field type code #{type_code.inspect}")
         end
